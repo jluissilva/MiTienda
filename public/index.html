@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#1d4ed8">
+    <title>MiTienda</title>
+
+    <link rel="icon" type="image/png" href="/img/logo/logo.png">
+    <link rel="apple-touch-icon" href="/img/logo/logo.png">
+
+    <link rel="stylesheet" href="/css/estilos.css">
+</head>
+<body>
+
+<div class="app">
+
+    <!-- HEADER: igual que en la maquetación, con el logo real de la tienda -->
+    <header class="header">
+        <img src="/img/logo/logo.png" alt="Logo" class="logo-img">
+        <h1 class="logo">MiTienda</h1>
+        <p class="sub">Sistema de Inventario y Ventas</p>
+    </header>
+
+    <main class="container">
+
+        <!-- Avisos globales: se usan cuando una acción (confirmar compra/
+             venta) saca al usuario de vuelta al menú de módulos, para que
+             el mensaje de éxito siga siendo visible ahí. -->
+        <div id="toast-global"></div>
+
+        <!-- ============================================================ -->
+        <!-- VISTA: INICIO (menú de módulos)                               -->
+        <!-- ============================================================ -->
+        <section id="vista-inicio" class="card">
+
+            <div class="title-box">
+                <img src="/img/iconos/modulos.png" class="title-icon">
+                <h2>Módulos</h2>
+            </div>
+
+            <div class="menu">
+                <button class="menu-boton" data-vista="productos" type="button">
+                    <img src="/img/iconos/menu-informes.png" class="menu-icon">
+                    Productos
+                </button>
+                <button class="menu-boton" data-vista="compras" type="button">
+                    <img src="/img/iconos/menu-compras.png" class="menu-icon">
+                    Compras
+                </button>
+                <button class="menu-boton" data-vista="ventas" type="button">
+                    <img src="/img/iconos/menu-ventas.png" class="menu-icon">
+                    Ventas
+                </button>
+                <button class="menu-boton" data-vista="caja" type="button">
+                    <img src="/img/iconos/menu-caja.png" class="menu-icon">
+                    Caja
+                </button>
+            </div>
+
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- VISTA: PRODUCTOS                                              -->
+        <!-- ============================================================ -->
+        <section id="vista-productos" class="card oculto" aria-labelledby="titulo-productos">
+
+            <button class="boton boton--secundario boton--pequeno boton-volver" type="button">← Volver a módulos</button>
+
+            <div class="subtitulo-modulo">
+                <img src="/img/iconos/menu-informes.png" alt="">
+                <span>Estás en: Productos</span>
+            </div>
+
+            <div class="title-box">
+                <img src="/img/iconos/menu-informes.png" class="title-icon">
+                <h2 id="titulo-productos">Catálogo de productos</h2>
+            </div>
+
+            <div class="campo">
+                <label for="buscador-productos">Buscar</label>
+                <input id="buscador-productos" type="search" placeholder="Nombre del producto…">
+            </div>
+
+            <div id="rejilla-productos" class="rejilla-productos"></div>
+
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- VISTA: COMPRAS                                                -->
+        <!-- ============================================================ -->
+        <section id="vista-compras" class="card oculto" aria-labelledby="titulo-compras">
+
+            <button class="boton boton--secundario boton--pequeno boton-volver" type="button">← Volver a módulos</button>
+
+            <div class="subtitulo-modulo">
+                <img src="/img/iconos/compras.png" alt="">
+                <span>Estás en: Compras</span>
+            </div>
+
+            <div id="alerta-compras"></div>
+
+            <!-- Panel: listado de compras -->
+            <div id="panel-listado-compras">
+
+                <div class="title-box">
+                    <img src="/img/iconos/compras.png" class="title-icon">
+                    <h2 id="titulo-compras">Compras</h2>
+                </div>
+
+                <button class="boton" id="boton-nueva-compra" type="button">
+                    <img src="/img/iconos/registrar-compra.png" class="btn-icon">
+                    Nueva compra
+                </button>
+
+                <div class="tabla-envoltorio">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Compra</th>
+                                <th>Fecha</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                                <th class="texto-derecha">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpo-tabla-compras"></tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <!-- Panel: formulario para crear una compra nueva -->
+            <div id="panel-formulario-compra" class="oculto">
+
+                <div class="title-box">
+                    <img src="/img/iconos/registrar-compra.png" class="title-icon">
+                    <h2>Nueva compra</h2>
+                </div>
+
+                <form id="formulario-nueva-compra">
+                    <div class="fila-campos">
+                        <div class="campo">
+                            <label for="nc-fecha">Fecha</label>
+                            <input id="nc-fecha" name="fecha_compra" type="datetime-local" required>
+                        </div>
+                        <div class="campo">
+                            <label for="nc-proveedor">Proveedor (ID)</label>
+                            <input id="nc-proveedor" name="id_proveedor" type="number" min="1" required>
+                        </div>
+                        <div class="campo">
+                            <label for="nc-usuario">Usuario (ID)</label>
+                            <input id="nc-usuario" name="id_usuario" type="number" min="1" required>
+                        </div>
+                    </div>
+                    <div class="campo">
+                        <label for="nc-descripcion">Descripción</label>
+                        <input id="nc-descripcion" name="descripciongeneral_compra" placeholder="Ej: Compra semanal de abarrotes">
+                    </div>
+
+                    <!-- Todas las compras de esta tienda son de contado:
+                         se fija el valor y no se le pregunta al usuario. -->
+                    <input type="hidden" name="forma_pagocompra" value="EFECTIVO">
+                    <p class="texto-suave">Forma de pago: Efectivo (contado)</p>
+
+                    <div class="barra-acciones">
+                        <button class="boton" type="submit">Crear compra</button>
+                        <button class="boton boton--secundario" id="boton-cancelar-nueva-compra" type="button">Cancelar</button>
+                    </div>
+                </form>
+
+            </div>
+
+            <!-- Panel: detalle de una compra puntual -->
+            <div id="panel-detalle-compra" class="oculto">
+
+                <button class="boton boton--secundario boton--pequeno" id="boton-volver-listado" type="button" style="margin-bottom: var(--espacio-m);">
+                    ← Volver al listado
+                </button>
+
+                <div id="alerta-detalle-compra"></div>
+
+                <div id="cuerpo-detalle-compra"></div>
+
+            </div>
+
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- VISTA: VENTAS                                                 -->
+        <!-- ============================================================ -->
+        <section id="vista-ventas" class="card oculto" aria-labelledby="titulo-ventas">
+
+            <button class="boton boton--secundario boton--pequeno boton-volver" type="button">← Volver a módulos</button>
+
+            <div class="subtitulo-modulo">
+                <img src="/img/iconos/ventas.png" alt="">
+                <span>Estás en: Ventas</span>
+            </div>
+
+            <div id="alerta-ventas"></div>
+
+            <!-- Panel: listado de ventas -->
+            <div id="panel-listado-ventas">
+
+                <div class="title-box">
+                    <img src="/img/iconos/ventas.png" class="title-icon">
+                    <h2 id="titulo-ventas">Ventas</h2>
+                </div>
+
+                <button class="boton" id="boton-nueva-venta" type="button">
+                    <img src="/img/iconos/registrar-venta.png" class="btn-icon">
+                    Nueva venta
+                </button>
+
+                <div class="tabla-envoltorio">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Venta</th>
+                                <th>Fecha</th>
+                                <th>Cliente</th>
+                                <th>Tipo</th>
+                                <th>Estado</th>
+                                <th class="texto-derecha">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpo-tabla-ventas"></tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <!-- Panel: formulario para crear una venta nueva -->
+            <div id="panel-formulario-venta" class="oculto">
+
+                <div class="title-box">
+                    <img src="/img/iconos/registrar-venta.png" class="title-icon">
+                    <h2>Nueva venta</h2>
+                </div>
+
+                <form id="formulario-nueva-venta">
+                    <!-- La fecha de venta ya no se pide: se guarda la fecha y
+                         hora actuales automáticamente, para vender rápido. -->
+                    <div class="fila-campos">
+                        <div class="campo">
+                            <label for="nv-cliente">Cliente (ID)</label>
+                            <input id="nv-cliente" name="id_cliente" type="number" min="1" placeholder="Opcional: venta de mostrador">
+                        </div>
+                        <div class="campo">
+                            <label for="nv-usuario">Usuario (ID)</label>
+                            <input id="nv-usuario" name="id_usuario" type="number" min="1" required>
+                        </div>
+                        <div class="campo">
+                            <label for="nv-tipo-venta">Tipo de venta</label>
+                            <select id="nv-tipo-venta" name="tipo_venta" required>
+                                <option value="CONTADO">Contado</option>
+                                <option value="FIADO">Fiado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="campo">
+                        <label for="nv-descripcion">Descripción</label>
+                        <input id="nv-descripcion" name="descripciongeneral_venta" placeholder="Ej: Venta de mostrador">
+                    </div>
+
+                    <!-- La forma de pago (efectivo, transferencia, etc.) ya
+                         no se pide aquí: se le preguntará al cliente justo
+                         antes de confirmar la venta, cuando ya se sabe qué
+                         está comprando. -->
+
+                    <div class="barra-acciones">
+                        <button class="boton" type="submit">Crear venta</button>
+                        <button class="boton boton--secundario" id="boton-cancelar-nueva-venta" type="button">Cancelar</button>
+                    </div>
+                </form>
+
+            </div>
+
+            <!-- Panel: detalle de una venta puntual -->
+            <div id="panel-detalle-venta" class="oculto">
+
+                <button class="boton boton--secundario boton--pequeno" id="boton-volver-listado-ventas" type="button" style="margin-bottom: var(--espacio-m);">
+                    ← Volver al listado
+                </button>
+
+                <div id="alerta-detalle-venta"></div>
+
+                <div id="cuerpo-detalle-venta"></div>
+
+            </div>
+
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- VISTA: CAJA                                                   -->
+        <!-- ============================================================ -->
+        <section id="vista-caja" class="card oculto" aria-labelledby="titulo-caja">
+
+            <button class="boton boton--secundario boton--pequeno boton-volver" type="button">← Volver a módulos</button>
+
+            <div class="subtitulo-modulo">
+                <img src="/img/iconos/caja.png" alt="">
+                <span>Estás en: Caja</span>
+            </div>
+
+            <div class="title-box">
+                <img src="/img/iconos/caja.png" class="title-icon">
+                <h2 id="titulo-caja">Caja</h2>
+            </div>
+
+            <div id="cuerpo-caja"></div>
+
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        MiTienda App
+    </footer>
+
+</div>
+
+<!-- Orden de carga: api.js y componentes.js definen funciones que
+     app.js usa, así que deben cargarse primero. -->
+<script src="/js/api.js"></script>
+<script src="/js/componentes.js"></script>
+<script src="/js/app.js"></script>
+
+</body>
+</html>

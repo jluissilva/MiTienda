@@ -1,0 +1,654 @@
+{
+  "info": {
+    "name": "MiTienda - Flujo de compras (borrador / confirmar / corregir)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Ejecutar en orden (Runner). Usa el producto de la variable id_producto. Deja la compra de prueba confirmada con 15 unidades al final."
+  },
+  "item": [
+    {
+      "name": "00 - Servidor activo",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": []
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('El servidor responde 200', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 - Crear compra (borrador)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/compras",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "compras"
+          ]
+        },
+        "description": "Usa TRANSFERENCIA a propósito para no activar el trigger de caja durante estas pruebas.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fecha_compra\": \"2026-09-19 10:00:00\",\n  \"id_proveedor\": 1,\n  \"id_usuario\": 1,\n  \"descripciongeneral_compra\": \"Prueba flujo borrador-confirmar-corregir\",\n  \"forma_pagocompra\": \"TRANSFERENCIA\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Compra creada (201)', function () { pm.response.to.have.status(201); });",
+              "const j = pm.response.json();",
+              "pm.collectionVariables.set('id_compra', j.id_compra);",
+              "console.log('id_compra =', j.id_compra);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Stock inicial del producto",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/productos/{{id_producto}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "productos",
+            "{{id_producto}}"
+          ]
+        },
+        "description": "Guarda el stock actual en la variable stock_inicial para compararlo en los pasos siguientes."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Producto encontrado', function () { pm.response.to.have.status(200); });",
+              "const p = pm.response.json();",
+              "pm.collectionVariables.set('stock_inicial', p.stock_producto);",
+              "console.log('Stock inicial:', p.stock_producto);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Agregar línea: 10 Kg",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/compras/{{id_compra}}/detalles",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "compras",
+            "{{id_compra}}",
+            "detalles"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_producto\": \"{{id_producto}}\",\n  \"und_medida\": \"Kg\",\n  \"cantidad_producto\": 10,\n  \"preciounitario_compra\": 2800,\n  \"preciounitario_venta\": 3600\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Línea agregada (201)', function () { pm.response.to.have.status(201); });",
+              "pm.collectionVariables.set('id_detallecompra', pm.response.json().id_detallecompra);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Ver compra (total 28.000)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/compras/{{id_compra}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "compras",
+            "{{id_compra}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Compra consultada', function () { pm.response.to.have.status(200); });",
+              "const j = pm.response.json();",
+              "pm.test('Total = 28000', function () { pm.expect(parseFloat(j.compra.valortotal_compra)).to.eql(28000); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Editar línea en borrador: 10 -> 12",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/compras/{{id_compra}}/detalles/{{id_detallecompra}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "compras",
+            "{{id_compra}}",
+            "detalles",
+            "{{id_detallecompra}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cantidad_producto\": 12\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Edición permitida en borrador (200)', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Ver compra (total 33.600)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/compras/{{id_compra}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "compras",
+            "{{id_compra}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Compra consultada', function () { pm.response.to.have.status(200); });",
+              "const j = pm.response.json();",
+              "pm.test('Total = 33600', function () { pm.expect(parseFloat(j.compra.valortotal_compra)).to.eql(33600); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Stock NO debe cambiar en borrador",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/productos/{{id_producto}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "productos",
+            "{{id_producto}}"
+          ]
+        },
+        "description": "Si esta prueba falla, queda algún trigger actualizar_producto_compra_* activo. Revisa SHOW TRIGGERS."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Producto encontrado', function () { pm.response.to.have.status(200); });",
+              "const stock = pm.response.json().stock_producto;",
+              "const inicial = Number(pm.collectionVariables.get('stock_inicial'));",
+              "pm.test('Stock igual al inicial (' + inicial + ')', function () { pm.expect(stock).to.eql(inicial); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - CONFIRMAR compra",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/compras/{{id_compra}}/confirmar",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "compras",
+            "{{id_compra}}",
+            "confirmar"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Compra confirmada (200)', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - Stock = inicial + 12",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/productos/{{id_producto}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "productos",
+            "{{id_producto}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Producto encontrado', function () { pm.response.to.have.status(200); });",
+              "const stock = pm.response.json().stock_producto;",
+              "const esperado = Number(pm.collectionVariables.get('stock_inicial')) + 12;",
+              "pm.test('Stock = ' + esperado, function () { pm.expect(stock).to.eql(esperado); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 - Editar línea confirmada (debe dar 409)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/compras/{{id_compra}}/detalles/{{id_detallecompra}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "compras",
+            "{{id_compra}}",
+            "detalles",
+            "{{id_detallecompra}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cantidad_producto\": 99\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('PUT bloqueado en compra confirmada (409)', function () { pm.response.to.have.status(409); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 - Agregar línea confirmada (debe dar 409)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/compras/{{id_compra}}/detalles",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "compras",
+            "{{id_compra}}",
+            "detalles"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_producto\": \"{{id_producto}}\",\n  \"und_medida\": \"Kg\",\n  \"cantidad_producto\": 1,\n  \"preciounitario_compra\": 2800,\n  \"preciounitario_venta\": 3600\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('POST bloqueado en compra confirmada (409)', function () { pm.response.to.have.status(409); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 - Eliminar línea confirmada (debe dar 409)",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/compras/{{id_compra}}/detalles/{{id_detallecompra}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "compras",
+            "{{id_compra}}",
+            "detalles",
+            "{{id_detallecompra}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('DELETE bloqueado en compra confirmada (409)', function () { pm.response.to.have.status(409); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 - CORREGIR compra (vuelve a borrador)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/compras/{{id_compra}}/corregir",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "compras",
+            "{{id_compra}}",
+            "corregir"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Compra devuelta a borrador (200)', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 - Stock vuelve al inicial",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/productos/{{id_producto}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "productos",
+            "{{id_producto}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Producto encontrado', function () { pm.response.to.have.status(200); });",
+              "const stock = pm.response.json().stock_producto;",
+              "const inicial = Number(pm.collectionVariables.get('stock_inicial'));",
+              "pm.test('Stock = inicial (' + inicial + ')', function () { pm.expect(stock).to.eql(inicial); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 - Editar de nuevo: 12 -> 15 (debe dejar)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/compras/{{id_compra}}/detalles/{{id_detallecompra}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "compras",
+            "{{id_compra}}",
+            "detalles",
+            "{{id_detallecompra}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cantidad_producto\": 15\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Edición permitida otra vez (200)', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 - CONFIRMAR de nuevo",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/compras/{{id_compra}}/confirmar",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "compras",
+            "{{id_compra}}",
+            "confirmar"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Compra confirmada otra vez (200)', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 - Stock = inicial + 15",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/productos/{{id_producto}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "productos",
+            "{{id_producto}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Producto encontrado', function () { pm.response.to.have.status(200); });",
+              "const stock = pm.response.json().stock_producto;",
+              "const esperado = Number(pm.collectionVariables.get('stock_inicial')) + 15;",
+              "pm.test('Stock = ' + esperado, function () { pm.expect(stock).to.eql(esperado); });"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "id_producto",
+      "value": "1"
+    },
+    {
+      "key": "id_compra",
+      "value": ""
+    },
+    {
+      "key": "id_detallecompra",
+      "value": ""
+    },
+    {
+      "key": "stock_inicial",
+      "value": ""
+    }
+  ]
+}
